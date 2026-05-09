@@ -1,41 +1,25 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependências
+node_modules/
+.next/
+out/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Ambientes — NUNCA commitar valores reais
+.env.development.local
+.env.test
+.env.staging
+.env.production
+# .env.example é o único que deve ser commitado
 
-# testing
-/coverage
+# Coverage
+coverage/
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# Misc
 .DS_Store
-*.pem
+*.log
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
+# Next.js
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma generated
+/app/generated/prisma

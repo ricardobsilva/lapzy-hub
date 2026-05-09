@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      AuthSession[]
+  raceSessions  RaceSession[]
+  tracks        Track[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Domínio Lapzy ───────────────────────────────────────────────────────────
+
+model Track {
+  id        String   @id
+  // UUID v4 gerado pelo cliente (offline-first) — não usar @default(cuid())
+  // A API deve aceitar o id do body e retornar 409 se já existir para outro usuário
+
+  name      String
+  createdAt DateTime
+  updatedAt DateTime
+
+  // Linha de largada/chegada — null enquanto traçado está sendo configurado
+  // Formato: TrackLine serializado como JSON
+  startFinishLine   Json?
+
+  // Divisores de setor: N divisores = N+1 setores. Array vazio = sem setores.
+  // Formato: TrackLine[] serializado como JSON
+  sectorBoundaries  Json     @default("[]")
+
+  // Desnormalizado — atualizado ao criar/deletar RaceSession
+  lastSession       DateTime?
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  raceSessions RaceSession[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model RaceSession {
+  id        String   @id
+  // UUID v4 gerado pelo cliente (offline-first) — não usar @default(cuid())
+
+  trackId   String
+  trackName String
+  // desnormalizado — garante legibilidade histórica após deleção do Track
+
+  date      DateTime
+  createdAt DateTime
+  // imutável após criação — nunca atualizado pelo servidor
+
+  // Voltas em ordem cronológica.
+  // Formato: LapResult[] — { lapMs: number, sectors: (number | null)[] }
+  // sectors pode conter null: setor não definido no momento da volta — valor intencional
+  laps      Json     @default("[]")
+
+  // null se nenhuma volta completada
+  bestLapMs Int?
+
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  track     Track       @relation(fields: [trackId], references: [id])
+
+  @@index([userId])
+  @@index([trackId])
+  @@index([date])
+}
